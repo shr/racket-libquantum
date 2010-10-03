@@ -81,6 +81,23 @@
 (defgate cond-phase-kick (_int _int _float _quregptr))
 
 (defquantum gate-counter : _int -> _int)
+
 (defgate qft (_int _quregptr))
 (defgate qft-inv (_int _quregptr))
+
+(defgate exp-mod-n (_int _int _int _int _quregptr))
+
+(defquantum measure : _quantum-reg -> _max-unsigned)
+(defquantum bmeasure : _int _quregptr -> _int)
+(defquantum bmeasure-bitpreserve : _int _quregptr -> _int)
+
+(defquantum new-matrix : _int _int -> _quantum-matrix)
+(defquantum delete-matrix : _quantum-matrix-pointer -> _void)
+(defquantum mmult : _quantum-matrix _quantum-matrix ->
+  _quantum-matrix)
+
+(defquantum ipow : _int _int -> _int)
+(defquantum gcd : _int _int -> _int)
+; (defquantum cancel : (a : (_ptr io _int)) (b : (_ptr io _int)) ->
+;  _void -> (list a b))
 
