@@ -16,6 +16,11 @@
           libquantum (_fun type ...)))
        (provide name))]))
 
+(define-syntax defgate
+  (syntax-rules ()
+    [(_ name (arg ...))
+     (defquantum name : arg ... -> _void)]))
+
 (define _max-unsigned _uint64)
 
 ;;; according to C99
@@ -56,32 +61,26 @@
 (defquantum print-timeop : _int _function-on-qureg -> _void)
 
 ; gates
-(defquantum cnot : _int _int _quregptr -> _void)
-(defquantum toffoli : _int _int _int _quregptr -> _void)
+(defgate cnot (_int _int _quregptr))
+(defgate toffoli (_int _int _int _quregptr))
 ; define unbounded toffoli gate here
-(defquantum sigma-x : _int _quregptr -> _void)
-(defquantum sigma-y : _int _quregptr -> _void)
-(defquantum sigma-z : _int _quregptr -> _void)
-(defquantum gate1 : _int _quantum-matrix _quregptr -> _void)
-(defquantum gate2 : _int _int _quantum-matrix _quregptr -> _void)
-(defquantum r-x : _int _float _quregptr -> _void)
-(defquantum r-y : _int _float _quregptr -> _void)
-(defquantum r-z : _int _float _quregptr -> _void)
-(defquantum phase-scale : _int _float _quregptr -> _void)
-(defquantum phase-kick : _int _float _quregptr -> _void)
-(defquantum hadamard : _int _quregptr -> _void)
-(defquantum walsh : _int _quregptr -> _void)
-(defquantum cond-phase : _int _int _quregptr -> _void)
-
-(define-syntax defgate
-  (syntax-rules ()
-    [(_ name arg ...)
-     (defquantum name : arg ... -> _void)]))
-
-(defgate cond-phase-inv _int _int _quregptr)
-(defgate cond-phase-kick _int _int _float _quregptr)
+(defgate sigma-x (_int _quregptr))
+(defgate sigma-y (_int _quregptr))
+(defgate sigma-z (_int _quregptr))
+(defgate gate1 (_int _quantum-matrix _quregptr))
+(defgate gate2 (_int _int _quantum-matrix _quregptr))
+(defgate r-x (_int _float _quregptr))
+(defgate r-y (_int _float _quregptr))
+(defgate r-z (_int _float _quregptr))
+(defgate phase-scale (_int _float _quregptr))
+(defgate phase-kick (_int _float _quregptr))
+(defgate hadamard (_int _quregptr))
+(defgate walsh (_int _quregptr))
+(defgate cond-phase (_int _int _quregptr))
+(defgate cond-phase-inv (_int _int _quregptr))
+(defgate cond-phase-kick (_int _int _float _quregptr))
 
 (defquantum gate-counter : _int -> _int)
-(defgate qft _int _quregptr)
-(defgate qft-inv _int _quregptr)
+(defgate qft (_int _quregptr))
+(defgate qft-inv (_int _quregptr))
 
