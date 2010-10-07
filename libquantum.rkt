@@ -1,26 +1,16 @@
 #lang racket
 
-(require ffi/unsafe)
+(require ffi/unsafe
+         ffi/unsafe/alloc
+         ffi/unsafe/define)
+(require ffi/vector)
 
 (define libquantum (ffi-lib "libquantum.so"))
 
-(define-syntax defquantum
-  (syntax-rules (:)
-    [(_ name : type ...)
-     (begin
-       (define name
-         (get-ffi-obj
-          (regexp-replaces 'name '((#rx"-" "_")
-                                   (#rx"[+*?!]" "")
-                                   (#rx"^" "quantum_")))
-          libquantum (_fun type ...)))
-       (provide name))]))
+(define-ffi-definer defquant libquantum
+  #:provide provide-protected)
 
-(define-syntax defgate
-  (syntax-rules ()
-    [(_ name (arg ...))
-     (defquantum name : arg ... -> _void)]))
-
+;; structure definitions
 (define _max-unsigned _uint64)
 
 ;;; according to C99
@@ -51,53 +41,142 @@
    (prob _pointer)
    (reg _quregptr)))
 
-(defquantum new-qureg : _max-unsigned _int -> _quantum-reg)
-(defquantum new-qureg-size : _int _int -> _quantum-reg)
-(defquantum delete-qureg : _quregptr -> _void)
-(defquantum print-qureg : _quantum-reg -> _void)
-(defquantum addscratch : _int _quregptr -> _void)
-(define _function-on-qureg
-  (_fun _quregptr -> _void))
-(defquantum print-timeop : _int _function-on-qureg -> _void)
+(defquant delete-qureg (_fun _quantum-reg-pointer -> _void)
+  #:c-id quantum_delete_qureg)
+(defquant new-qureg (_fun _max-unsigned _int -> _quantum-reg)
+  #:c-id quantum_new_qureg
+  #:wrap (allocator delete-qureg))
+(defquant print-qureg (_fun _quantum-reg -> _void)
+  #:c-id quantum_print_qureg)
+(defquant addscratch (_fun _int _quantum-reg-pointer -> _void)
+  #:c-id quantum_addscratch)
+(defquant kronecker (_fun _quregptr _quregptr -> _quantum-reg)
+  #:c-id quantum_kronecker)
+(defquant dot-product (_fun _quregptr _quregptr -> _complex-float)
+  #:c-id quantum_dot_product)
 
-; gates
-(defgate cnot (_int _int _quregptr))
-(defgate toffoli (_int _int _int _quregptr))
-; define unbounded toffoli gate here
-(defgate sigma-x (_int _quregptr))
-(defgate sigma-y (_int _quregptr))
-(defgate sigma-z (_int _quregptr))
-(defgate gate1 (_int _quantum-matrix _quregptr))
-(defgate gate2 (_int _int _quantum-matrix _quregptr))
-(defgate r-x (_int _float _quregptr))
-(defgate r-y (_int _float _quregptr))
-(defgate r-z (_int _float _quregptr))
-(defgate phase-scale (_int _float _quregptr))
-(defgate phase-kick (_int _float _quregptr))
-(defgate hadamard (_int _quregptr))
-(defgate walsh (_int _quregptr))
-(defgate cond-phase (_int _int _quregptr))
-(defgate cond-phase-inv (_int _int _quregptr))
-(defgate cond-phase-kick (_int _int _float _quregptr))
+;; basic operations
 
-(defquantum gate-counter : _int -> _int)
+(defquant cnot (_fun _int _int _quregptr -> _void)
+  #:c-id quantum_cnot)
+(defquant toffoli (_fun _int _int _int _quregptr -> _void)
+  #:c-id quantum_toffoli)
+(defquant sigma-x (_fun _int _quregptr -> _void)
+  #:c-id quantum_sigma_x)
+(defquant sigma-y (_fun _int _quregptr -> _void)
+  #:c-id quantum_sigma_y)
+(defquant sigma-z (_fun _int _quregptr -> _void)
+  #:c-id quantum_sigma_z)
+(defquant rot-x (_fun _int _float _quregptr -> _void)
+  #:c-id quantum_r_x)
+(defquant rot-y (_fun _int _float _quregptr -> _void)
+  #:c-id quantum_r_y)
+(defquant rot-z (_fun _int _float _quregptr -> _void)
+  #:c-id quantum_r_z)
+(defquant phase-scale (_fun _int _float _quregptr -> _void)
+  #:c-id quantum_phase_scale)
+(defquant phase-kick (_fun _int _float _quregptr -> _void)
+  #:c-id quantum_phase_kick)
+(defquant hadamard (_fun _int _quregptr -> _void)
+  #:c-id quantum_hadamard)
+(defquant walsh (_fun _int _quregptr -> _void)
+  #:c-id quantum_walsh)
+(defquant cond-phase (_fun _int _int _quregptr -> _void)
+  #:c-id quantum_cond_phase)
+(defquant cond-phase-kick (_fun _int _int _float _quregptr -> _void)
+  #:c-id quantum_cond_phase_kick)
+(defquant gate1 (_fun _int _quantum-matrix _quregptr -> _void)
+  #:c-id quantum_gate1)
 
-(defgate qft (_int _quregptr))
-(defgate qft-inv (_int _quregptr))
+(defquant delete-matrix (_fun _quantum-matrix-pointer -> _void)
+  #:c-id quantum_delete_matrix)
+(defquant new-matrix (_fun _int _int -> _quantum-matrix)
+  #:c-id quantum_new_matrix
+  #:wrap (allocator delete-matrix))
 
-(defgate exp-mod-n (_int _int _int _int _quregptr))
+(defquant gate2 (_fun _int _int _quantum-matrix _quregptr -> _void)
+  #:c-id quantum_gate2)
 
-(defquantum measure : _quantum-reg -> _max-unsigned)
-(defquantum bmeasure : _int _quregptr -> _int)
-(defquantum bmeasure-bitpreserve : _int _quregptr -> _int)
+;; algorithms
 
-(defquantum new-matrix : _int _int -> _quantum-matrix)
-(defquantum delete-matrix : _quantum-matrix-pointer -> _void)
-(defquantum mmult : _quantum-matrix _quantum-matrix ->
-  _quantum-matrix)
+(defquant exp-mod-n (_fun _int _int _int _int _quregptr -> _void)
+  #:c-id quantum_exp_mod_n)
+(defquant qft (_fun _int _quregptr -> _void)
+  #:c-id quantum_qft)
+(defquant qft-inv (_fun _int _quregptr -> _void)
+  #:c-id quantum_qft_inv)
 
-(defquantum ipow : _int _int -> _int)
-(defquantum gcd : _int _int -> _int)
-; (defquantum cancel : (a : (_ptr io _int)) (b : (_ptr io _int)) ->
-;  _void -> (list a b))
+;; measurements
+(defquant measure (_fun _quantum-reg -> _max-unsigned)
+  #:c-id quantum_measure)
+(defquant bmeasure (_fun _int _quregptr -> _int)
+  #:c-id quantum_bmeasure)
+(defquant bmeasure-bitpreserve (_fun _int _quregptr -> _int)
+  #:c-id quantum_bmeasure_bitpreserve)
+
+;; decoherence
+(defquant set-decoherence! (_fun _float -> _void)
+  #:c-id quantum_set_decoherence)
+(defquant decohere (_fun _quregptr -> _void)
+  #:c-id quantum_decohere)
+
+;; quantum-error-correction
+
+;; the first argument is type: 0 (no QEC), 1 (Steane code)
+(defquant qec-encode (_fun _int _int _quregptr -> _void)
+  #:c-id quantum_qec_encode)
+(defquant qec-decode (_fun _int _int _quregptr -> _void)
+  #:c-id quantum_qec_decode)
+
+;; the density operator formalism
+(define _qdensptr _quantum-density-op-pointer)
+(defquant delete-density-op (_fun _qdensptr -> _void)
+  #:c-id quantum_delete_density_op)
+
+(defquant new-density-op (_fun _int
+                               _f32vector
+                               _quregptr
+                               -> _quantum-density-op)
+  #:c-id quantum_new_density_op
+  #:wrap (allocator delete-density-op))
+(defquant qureg->density-op (_fun _quregptr -> _quantum-density-op)
+  #:c-id quantum_qureg2density_op)
+(defquant print-density-matrix (_fun _qdensptr -> _void)
+  #:c-id quantum_print_density_matrix)
+(defquant reduce-density-op (_fun _int _qdensptr -> _void)
+  #:c-id quantum_reduced_density_op)
+(defquant purity (_fun _qdensptr -> _float)
+  #:c-id quantum_purity)
+
+;; object code
+(defquant objcode-start (_fun -> _void)
+  #:c-id quantum_objcode_start)
+(defquant objcode-write (_fun _string -> _int)
+  #:c-id quantum_objcode_write)
+(defquant objcode-stop (_fun -> _void)
+  #:c-id quantum_objcode_stop)
+(defquant objcode-run (_fun _string _quregptr -> _void)
+  #:c-id quantum_objcode_run)
+
+;; time evolution
+(define _hamiltonian (_fun _max-unsigned _double -> _quantum-reg))
+
+(defquant rk4 (_fun _quregptr _double _double _hamiltonian _int -> _void)
+  #:c-id quantum_rk4)
+(defquant rk4-adaptive (_fun _quregptr _double (dt : (_ptr io _double))
+                             _hamiltonian -> (step : _double)
+                             -> (list dt step))
+  #:c-id quantum_rk4a)
+
+;; miscellaneous
+(defquant gate-counter (_fun _int -> _int)
+  #:c-id quantum_gate_counter)
+(defquant prob (_fun _complex-float -> _float)
+  #:c-id quantum_prob)
+(defquant get-width (_fun _int -> _int)
+  #:c-id quantum_getwidth)
+(defquant version (_fun -> _string)
+  #:c-id quantum_get_version)
+(defquant print-timeop (_fun _int (_fun _quregptr -> _void) -> _void)
+  #:c-id quantum_print_timeop)
 
