@@ -1,6 +1,8 @@
 #lang racket
 
 (require (prefix-in q: "libquantum.rkt"))
+(require rackunit
+         rackunit/text-ui)
 
 ; the simple random number generating algorithm
 
@@ -19,3 +21,17 @@
     (for ([i (in-range 2)])
       (q:hadamard i reg))
     (q:bmeasure 0 reg)))
+
+(define-test-suite libquantum-tests
+  (test-suite
+   "Deutsch-Jozsa Algorithm"
+   (test-case
+    "identity function"
+    (check-eq? 1
+               (deutsch-jozsa (lambda (x) x))))
+   (test-case
+    "balanced function"
+    (check-eq? 0
+               (deutsch-jozsa (lambda (x) (q:cnot 0 2 x)))))))
+
+(run-tests libquantum-tests)
