@@ -30,7 +30,8 @@
   ((amplitude _complex-float)
    (state _uint64)))
 
-(provide quantum-reg-width quantum-reg-size quantum-reg-nodeptr)
+(provide quantum-reg-width quantum-reg-size quantum-reg-nodeptr
+         set-quantum-reg-width!)
 (define-cstruct _quantum-reg
   ((width _int)
    (size _int)
@@ -183,4 +184,15 @@
   #:c-id quantum_get_version)
 (defquant print-timeop (_fun _int (_fun _quregptr -> _void) -> _void)
   #:c-id quantum_print_timeop)
+
+; utility functions
+(provide nondestructive-measure ith-node)
+(define (nondestructive-measure reg)
+  (for/list ([i (in-range (quantum-reg-size reg))])
+    (bmeasure-bitpreserve i reg)))
+
+(define (ith-node reg i)
+  (unless (< i (quantum-reg-size reg))
+    (error 'ith-node (format "size ~a too large for register" i)))
+  (ptr-add (quantum-reg-nodeptr reg) i))
 
