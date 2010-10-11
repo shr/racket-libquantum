@@ -14,19 +14,23 @@
 (define _max-unsigned _uint64)
 
 ;;; according to C99
+(provide make-complex-float complex-float-real complex-float-imag)
 (define-cstruct _complex-float
   ((real _float)
    (imag _float)))
 
+(provide quantum-matrix-rows quantum-matrix-cols quantum-matrix-t)
 (define-cstruct _quantum-matrix
   ((rows _int)
    (cols _int)
    (t _complex-float-pointer)))
 
+(provide quantum-reg-node-amplitude quantum-reg-node-state)
 (define-cstruct _quantum-reg-node
   ((amplitude _complex-float)
    (state _uint64)))
 
+(provide quantum-reg-width quantum-reg-size quantum-reg-nodeptr)
 (define-cstruct _quantum-reg
   ((width _int)
    (size _int)
@@ -48,7 +52,7 @@
   #:wrap (allocator delete-qureg))
 (defquant print-qureg (_fun _quantum-reg -> _void)
   #:c-id quantum_print_qureg)
-(defquant addscratch (_fun _int _quantum-reg-pointer -> _void)
+(defquant add-scratch (_fun _int _quantum-reg-pointer -> _void)
   #:c-id quantum_addscratch)
 (defquant kronecker (_fun _quregptr _quregptr -> _quantum-reg)
   #:c-id quantum_kronecker)
